@@ -1,0 +1,46 @@
+name: Deploy PDF Master
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            apps/pdf-master/package-lock.json
+
+      - name: Install Workspace Dependencies
+        run: npm ci
+
+      - name: Install App Dependencies
+        run: npm --prefix apps/pressure-vessel-dished-end-calc ci
+
+      - name: Build Static App
+        run: npm run build
+
+      - name: Push to Website Repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.DEPLOY_TOKEN }}
+        with:
+          source-directory: 'static/utilities/pressure-vessel-dished-end-calc'
+          destination-github-username: 'biosxxx'
+          destination-repository-name: 'cadautoscript.com'
+          target-directory: 'static/utility-apps/pressure-vessel-dished-end-calc'
+          user-email: 'bot@react-table-editor.com'
+          target-branch: main
