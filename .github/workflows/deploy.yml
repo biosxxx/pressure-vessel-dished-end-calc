@@ -1,4 +1,4 @@
-name: Deploy PDF Master
+name: Build And Deploy Utility App
 
 on:
   push:
@@ -20,27 +20,31 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            apps/pdf-master/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install Workspace Dependencies
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Install App Dependencies
-        run: npm --prefix apps/pressure-vessel-dished-end-calc ci
-
-      - name: Build Static App
+      - name: Build App
         run: npm run build
+
+      - name: Prepare Deploy Bundle
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+          cp -R dist/assets deploy/assets
+          cp dist/index.html deploy/app.html
 
       - name: Push to Website Repository
         uses: cpina/github-action-push-to-another-repository@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.DEPLOY_TOKEN }}
         with:
-          source-directory: 'static/utilities/pressure-vessel-dished-end-calc'
+          source-directory: 'deploy'
           destination-github-username: 'biosxxx'
           destination-repository-name: 'cadautoscript.com'
           target-directory: 'static/utility-apps/pressure-vessel-dished-end-calc'
           user-email: 'bot@react-table-editor.com'
+          user-name: 'github-actions[bot]'
+          commit-message: 'Deploy pressure-vessel-dished-end-calc from ${{ github.sha }}'
           target-branch: main
